@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG Game Board</title>
+  <style>
+    body {
+      display: flex;
+      gap: 20px;
+      font-family: sans-serif;
+      margin: 0;
+      overflow: hidden;
+    }
+    #sidebar {
+      resize: horizontal;
+      overflow: auto;
+      min-width: 150px;
+      max-width: 400px;
+    }
+    #sidebar, #editor {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 100vh;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: #fafafa;
+    }
+    .icon-select {
+      width: 64px;
+      height: 64px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      text-align: center;
+      line-height: 64px;
+      font-weight: bold;
+      color: white;
+    }
+    .selected {
+      border-color: blue;
+    }
+    canvas {
+      border: 1px solid black;
+      background-color: #f0f0f0;
+      image-rendering: pixelated;
+      display: block;
+    }
+    #controls {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border: 1px solid #ccc;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    #controls button {
+      font-size: 20px;
+      width: 32px;
+      height: 32px;
+      margin: 2px;
+    }
+    .entity-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <button onclick="addEntity(selectedType)">Add Entity</button>
+    <div><strong>Select Type:</strong></div>
+    <div id="typeButtons" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
+    <div><strong>Terrain:</strong></div>
+    <div id="terrainButtons" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
+    <div>
+      <label>Grid X: <input id="gridX" type="number" value="8" min="1" style="width: 60px;"></label><br>
+      <label>Grid Y: <input id="gridY" type="number" value="8" min="1" style="width: 60px;"></label><br>
+      <button onclick="resizeGrid()">Resize Grid</button>
+    </div>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="controls">
+    <button onclick="undo()">⎌</button>
+    <button onclick="zoomIn()">+</button>
+    <button onclick="zoomOut()">-</button>
+    <button onclick="fitGridToScreen()">=</button>
+    <button onclick="saveToFile()">💾</button>
+    <button onclick="loadFromFile()">📂</button>
+    <div style="margin-top: 10px; text-align: center;">
+      <button onclick="pan('up')">↑</button><br>
+      <button onclick="pan('left')">←</button>
+      <button onclick="pan('right')">→</button><br>
+      <button onclick="pan('down')">↓</button>
+    </div>
+  </div>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    let cellSize = 64;
+    let gridWidth = 8;
+    let gridHeight = 8;
+    let offsetX = 0;
+    let offsetY = 0;
+    let selectedType = null;
+    let selectedCategory = null;
+    const entities = [];
+    let terrain = [];
+    let undoStack = [];
+    let isMouseDown = false;
+    let draggingEntity = null;
+    let editorMode = false;
+
+    const typeButtons = document.getElementById("typeButtons");
+    const terrainButtons = document.getElementById("terrainButtons");
+    const entityImages = {};
+
+    const iconPaths = [
+      "icons_export/DnD5E_ClassSymb_Warlock.png",
+      "icons_export/DnD5E_ClassSymb_Wizard.png",
+      "icons_export/DnD5E_ClassSymb_Barbarian.png",
+      "icons_export/DnD5E_ClassSymb_Bard.png",
+      "icons_export/DnD5E_ClassSymb_Cleric.png",
+      "icons_export/DnD5E_ClassSymb_Druid.png",
+      "icons_export/DnD5E_ClassSymb_Fighter.png",
+      "icons_export/DnD5E_ClassSymb_Monk.png",
+      "icons_export/DnD5E_ClassSymb_Paladin.png",
+      "icons_export/DnD5E_ClassSymb_Ranger.png",
+      "icons_export/DnD5E_ClassSymb_Rogue.png",
+      "icons_export/DnD5E_ClassSymb_Sorcerer.png",
+      "icons_export/enemy_square_icons/Enemy_01.png",
+      "icons_export/enemy_square_icons/Enemy_02.png",
+      "icons_export/enemy_square_icons/Enemy_03.png",
+      "icons_export/enemy_square_icons/Enemy_04.png",
+      "icons_export/enemy_square_icons/Enemy_05.png",
+      "icons_export/enemy_square_icons/Enemy_06.png",
+      "icons_export/enemy_square_icons/Enemy_07.png",
+      "icons_export/enemy_square_icons/Enemy_08.png",
+      "icons_export/enemy_square_icons/Enemy_09.png",
+      "icons_export/enemy_square_icons/Enemy_10.png"
+    ];
+
+    iconPaths.forEach(path => {
+      const name = path.split("_").pop().split(".")[0].toLowerCase();
+      const img = new Image();
+      img.src = path;
+      img.onload = () => {
+        entityImages[name] = img;
+        const btn = document.createElement("div");
+        btn.className = "icon-select";
+        btn.style.backgroundColor = "black";
+        const icon = new Image();
+        icon.src = path;
+        icon.className = "entity-icon";
+        btn.appendChild(icon);
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".icon-select").forEach(el => el.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedType = name;
+          selectedCategory = 'entity';
+        });
+        typeButtons.appendChild(btn);
+      };
+    });
+
+    ["wall", "trap", "hole", "platform"].forEach(type => {
+      const btn = document.createElement("div");
+      btn.className = "icon-select";
+      btn.style.backgroundColor = { wall: "gray", trap: "red", hole: "blue", platform: "green" }[type];
+      btn.textContent = type[0].toUpperCase();
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".icon-select").forEach(el => el.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedType = type;
+        selectedCategory = 'terrain';
+      });
+      terrainButtons.appendChild(btn);
+    });
+
+    function addEntity(type) {
+  saveState();
+  const maxAttempts = 50;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const x = Math.floor(Math.random() * gridWidth);
+    const y = Math.floor(Math.random() * gridHeight);
+    const stack = terrain.filter(t => t.x === x && t.y === y);
+    const hasWall = stack.some(t => t.type === 'wall');
+    if (!hasWall && !entities.some(e => e.x === x && e.y === y)) {
+      entities.push({ type, x, y, id: Date.now(), outline: getRandomColor() });
+      break;
+    }
+  }
+  render();
+    }
+
+    function saveState() {
+      undoStack.push({
+        entities: JSON.parse(JSON.stringify(entities)),
+        terrain: JSON.parse(JSON.stringify(terrain))
+      });
+      if (undoStack.length > 100) undoStack.shift();
+    }
+
+    function undo() {
+      const last = undoStack.pop();
+      if (last) {
+        entities.length = 0;
+        terrain.length = 0;
+        last.entities.forEach(e => entities.push(e));
+        last.terrain.forEach(t => terrain.push(t));
+        render();
+      }
+    }
+
+    function resizeGrid() {
+      gridWidth = parseInt(document.getElementById("gridX").value);
+      gridHeight = parseInt(document.getElementById("gridY").value);
+      fitGridToScreen();
+    }
+
+    function fitGridToScreen() {
+      const maxWidth = window.innerWidth - document.getElementById("sidebar").offsetWidth - 60;
+      const maxHeight = window.innerHeight - 60;
+      cellSize = Math.floor(Math.min(maxWidth / gridWidth, maxHeight / gridHeight));
+      offsetX = (window.innerWidth - document.getElementById("sidebar").offsetWidth - (gridWidth * cellSize)) / 2;
+      offsetY = (window.innerHeight - (gridHeight * cellSize)) / 2;
+      render();
+    }
+
+    function zoomIn() {
+      cellSize = Math.min(256, cellSize + 8);
+      render();
+    }
+
+    function zoomOut() {
+      cellSize = Math.max(16, cellSize - 8);
+      render();
+    }
+
+    function pan(dir) {
+      const step = 20;
+      if (dir === 'up') offsetY += step;
+      if (dir === 'down') offsetY -= step;
+      if (dir === 'left') offsetX += step;
+      if (dir === 'right') offsetX -= step;
+      render();
+    }
+
+    function saveToFile() {
+      const blob = new Blob([JSON.stringify({
+        entities,
+        terrain,
+        gridWidth,
+        gridHeight
+      }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rpg_board_state.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function loadFromFile() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = event => {
+          try {
+            const data = JSON.parse(event.target.result);
+            entities.length = 0;
+            terrain.length = 0;
+            data.entities?.forEach(e => entities.push(e));
+            data.terrain?.forEach(t => terrain.push(t));
+            if (data.gridWidth && data.gridHeight) {
+              gridWidth = data.gridWidth;
+              gridHeight = data.gridHeight;
+              document.getElementById("gridX").value = gridWidth;
+              document.getElementById("gridY").value = gridHeight;
+            }
+            fitGridToScreen();
+          } catch (err) {
+            alert("Failed to load: " + err.message);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    //RENDER FUNCTION MISSING — PLEASE DEFINE IT HERE
+
+function render() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.translate(offsetX, offsetY);
+
+  for (let y = 0; y < gridHeight; y++) {
+    for (let x = 0; x < gridWidth; x++) {
+      ctx.strokeStyle = '#ccc';
+      ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+
+  terrain.forEach(t => {
+    ctx.fillStyle = { wall: "gray", trap: "red", hole: "blue", platform: "green" }[t.type] || "white";
+    ctx.fillRect(t.x * cellSize, t.y * cellSize, cellSize, cellSize);
+    if (typeof t.z !== "undefined") {
+      ctx.fillStyle = "white";
+      ctx.font = `${Math.floor(cellSize / 3)}px sans-serif`;
+      ctx.fillText(`z${t.z}`, t.x * cellSize + 4, t.y * cellSize + cellSize - 4);
+    }
+  });
+
+  entities.forEach(ent => {
+    const img = entityImages[ent.type];
+    const px = ent.x * cellSize;
+    const py = ent.y * cellSize;
+    if (img) {
+      ctx.drawImage(img, px + 4, py + 4, cellSize - 8, cellSize - 8);
+      if (ent.outline) {
+        ctx.strokeStyle = ent.outline;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + 4, py + 4, cellSize - 8, cellSize - 8);
+      }
+    } else {
+      ctx.fillStyle = "black";
+      ctx.fillRect(px + 8, py + 8, cellSize - 16, cellSize - 16);
+    }
+   
+  });
+}
+
+// Existing code continues below...
+
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'e') editorMode = true;
+    });
+
+    canvas.addEventListener("mousedown", e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left - offsetX) / cellSize);
+      const y = Math.floor((e.clientY - rect.top - offsetY) / cellSize);
+      const dragging = entities.find(ent => ent.x === x && ent.y === y);
+      if (dragging) {
+        draggingEntity = dragging;
+      } else {
+        isMouseDown = true;
+        handleBrush(e);
+      }
+    });
+
+    canvas.addEventListener("mousemove", e => {
+      if (draggingEntity) {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left - offsetX) / cellSize);
+        const y = Math.floor((e.clientY - rect.top - offsetY) / cellSize);
+        if (!entities.some(ent => ent !== draggingEntity && ent.x === x && ent.y === y)) {
+          const stack = terrain.filter(t => t.x === x && t.y === y);
+          const hasWall = stack.some(t => t.type === 'wall');
+          if (!hasWall) {
+            draggingEntity.x = x;
+            draggingEntity.y = y;
+          }
+          render();
+        }
+      } else if (isMouseDown) {
+        handleBrush(e);
+      }
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      isMouseDown = false;
+      if (draggingEntity) {
+        saveState();
+        draggingEntity = null;
+      }
+    });
+
+    canvas.addEventListener("click", (e) => {
+      if (!editorMode) return;
+      editorMode = false;
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left - offsetX) / cellSize);
+      const y = Math.floor((e.clientY - rect.top - offsetY) / cellSize);
+      const ent = entities.find(ent => ent.x === x && ent.y === y);
+      const terr = terrain.find(t => t.x === x && t.y === y);
+      if (ent || terr) {
+        document.getElementById('editorContent').innerHTML = `
+          <p><strong>Cell (${x}, ${y})</strong></p>
+          ${ent ? `<p>Entity: ${ent.type}</p>` : '<p>No entity</p>'}
+          ${terr ? `<p>Terrain: ${terr.type}</p>` : '<p>No terrain</p>'}
+          <div><label>Entity Type: <select id="editEntityType">${Object.keys(entityImages).map(type => `<option value="${type}" ${ent?.type === type ? 'selected' : ''}>${type}</option>`).join('')}</select></label></div>
+          <div><label>Entity ID: <input id="editEntityId" type="number" value="${ent?.id ?? ''}"></label></div>
+          <div><label>Terrain Type: <select id="editTerrainType"><option value="wall">wall</option><option value="trap">trap</option><option value="hole">hole</option><option value="platform">platform</option></select></label></div>
+          <div><label>Terrain Z: <input id="editTerrainZ" type="number" value="${terr?.z ?? 0}"></label></div>
+          <button onclick="applyEditorChanges()">Apply</button>`;
+        document.getElementById('editor').style.display = 'block';
+        window._editorX = x;
+        window._editorY = y;
+      }
+    });
+
+    function handleBrush(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left - offsetX) / cellSize);
+      const y = Math.floor((e.clientY - rect.top - offsetY) / cellSize);
+      if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) return;
+
+      if (selectedCategory === 'terrain') {
+        const stack = terrain.filter(t => t.x === x && t.y === y);
+        let z = 0;
+        if (selectedType === 'hole') {
+          z = stack.reduce((acc, t) => acc + (t.type === 'hole' ? -1 : 0), 0) - 1;
+        } else if (selectedType === 'platform') {
+          z = stack.reduce((acc, t) => acc + (t.type === 'platform' ? 1 : 0), 0) + 1;
+        } else {
+          z = 0;
+        }
+        terrain.push({ x, y, type: selectedType, z });
+        render();
+      }
+    }
+
+    function applyEditorChanges() {
+      const type = document.getElementById('editEntityType').value;
+      const id = parseInt(document.getElementById('editEntityId').value);
+      const ttype = document.getElementById('editTerrainType').value;
+      const z = parseInt(document.getElementById('editTerrainZ').value);
+
+      let ent = entities.find(e => e.x === window._editorX && e.y === window._editorY);
+      if (ent) {
+        ent.type = type;
+        ent.id = id;
+      }
+
+      let terrIndex = terrain.findIndex(t => t.x === window._editorX && t.y === window._editorY);
+      if (terrIndex !== -1) {
+        terrain[terrIndex].type = ttype;
+        terrain[terrIndex].z = z;
+      } else {
+        terrain.push({ x: window._editorX, y: window._editorY, type: ttype, z });
+      }
+
+      saveState();
+      render();
+      closeEditor();
+    }
+
+    function closeEditor() {
+      document.getElementById('editor').style.display = 'none';
+    }
+
+    function deleteEntity() {
+      const idx = entities.findIndex(e => e.x === window._editorX && e.y === window._editorY);
+      if (idx !== -1) {
+        saveState();
+        entities.splice(idx, 1);
+        render();
+        closeEditor();
+      }
+    }
+
+    function deleteTerrain() {
+      const lenBefore = terrain.length;
+      terrain = terrain.filter(t => !(t.x === window._editorX && t.y === window._editorY));
+      if (terrain.length !== lenBefore) {
+        saveState();
+        render();
+        closeEditor();
+      }
+    }
+
+    fitGridToScreen();
+  function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
+</script>
+  <div id="editor" style="position: fixed; bottom: 10px; right: 10px; background: white; padding: 10px; border: 1px solid #ccc; display: none; z-index: 9999;">
+    <h4>Edit Cell</h4>
+    <div id="editorContent"></div>
+    <button onclick="deleteEntity()">Delete Entity</button>
+    <button onclick="deleteTerrain()">Delete Terrain</button>
+    <button onclick="closeEditor()">Close</button>
+  </div>
+</body>
+</html>
