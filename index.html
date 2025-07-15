@@ -318,7 +318,7 @@ function render() {
   }
 
   terrain.forEach(t => {
-    ctx.fillStyle = { wall: '#808080', trap: '#ff0000', hole: '#0000ff', platform: "00ff00" }[t.type] || 'ffffff';
+    ctx.fillStyle = { wall: '#808080', trap: '#ff0000', hole: '#0000ff', platform: "00ff00" }[t.type] || 'white';
     ctx.fillRect(t.x * cellSize, t.y * cellSize, cellSize, cellSize);
     if (typeof t.z !== "undefined") {
       ctx.fillStyle = "white";
