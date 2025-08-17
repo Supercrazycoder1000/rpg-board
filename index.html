@@ -72,6 +72,12 @@
       object-fit: contain;
     }
     #sidebar::after { content: ""; display: block; height: 30px; }
+    #sidebar a.info-link{
+      display:block; text-align:center; padding:8px 10px;
+      background:#fff; border:1px solid #ccc; border-radius:8px;
+      text-decoration:none; color:#111; font-weight:600;
+    }
+    #sidebar a.info-link:hover{ background:#f0f0f0; border-color:#999; }
   </style>
 </head>
 <body>
@@ -85,6 +91,9 @@
       <label>Grid X: <input id="gridX" type="number" value="8" min="1" style="width: 60px;"></label><br>
       <label>Grid Y: <input id="gridY" type="number" value="8" min="1" style="width: 60px;"></label><br>
       <button onclick="resizeGrid()">Resize Grid</button>
+      <div style="margin-top:8px">
+      <a class="info-link" href="/info/" target="_blank" rel="noopener">ℹ️ Help / Info</a>
+      </div>
     </div>
   </div>
   <canvas id="gameCanvas"></canvas>
