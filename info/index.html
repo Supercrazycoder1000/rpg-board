@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG Game Board — Info & User Guide</title>
+  <style>
+    :root{
+      --bg:#fff;--fg:#1a1a1a;--muted:#666;--line:#ddd;--chip:#f7f7f7;--accent:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Inter,sans-serif;margin:0;color:var(--fg);background:var(--bg);}
+    header{position:sticky;top:0;backdrop-filter:saturate(1.2) blur(6px);background:rgba(255,255,255,.85);border-bottom:1px solid var(--line);}
+    .wrap{max-width:980px;margin:0 auto;padding:24px;}
+    h1{font-size:28px;margin:0 0 6px}
+    h2{margin-top:32px;border-top:1px solid var(--line);padding-top:24px}
+    h3{margin-top:20px}
+    p{line-height:1.6}
+    code,.kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.95em;background:#f6f8fa;border:1px solid #e5e7eb;border-radius:6px;padding:0 .35em}
+    .kbd{display:inline-block;padding:.2em .45em;border-radius:6px;border:1px solid #cbd5e1;background:#eef2f7}
+    nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 8px}
+    nav.toc a{display:inline-block;background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;color:inherit;text-decoration:none}
+    nav.toc a:hover{border-color:#bbb}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:840px){.grid{grid-template-columns:1fr}}
+    .callout{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:12px;padding:12px}
+    .list-compact li{margin:.25rem 0}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--chip)}
+    .color{width:14px;height:14px;border-radius:3px;border:1px solid #999;display:inline-block}
+    table{width:100%;border-collapse:collapse;margin:6px 0}
+    th,td{border:1px solid var(--line);padding:8px;text-align:left}
+    .small{color:var(--muted);font-size:.92em}
+    footer{margin:40px 0 10px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>RPG Game Board — Info & User Guide</h1>
+      <p class="small">A quick reference for the interactive grid/board editor (canvas-based) with terrain, entities, coordinates, save/load, and more.</p>
+      <nav class="toc">
+        <a href="#quick-start">Quick Start</a>
+        <a href="#ui-overview">UI Overview</a>
+        <a href="#grid-coords">Grid & Coordinates</a>
+        <a href="#terrain">Terrain</a>
+        <a href="#entities">Entities</a>
+        <a href="#editing">Cell Editor</a>
+        <a href="#view">Zoom, Pan & Fit</a>
+        <a href="#save-load">Save & Load</a>
+        <a href="#undo">Undo</a>
+        <a href="#resize">Resizing the Grid</a>
+        <a href="#customize">Customization</a>
+        <a href="#troubleshooting">Troubleshooting</a>
+        <a href="#schema">Saved File Schema</a>
+        <a href="#shortcuts">Shortcuts</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="quick-start">
+      <h2>Quick Start</h2>
+      <ol>
+        <li>Pick a <strong>terrain</strong> type (Wall/Trap/Hole/Platform) or an <strong>entity</strong> icon in the left sidebar.</li>
+        <li>Click the grid to <strong>paint terrain</strong> or use <span class="pill"><span class="color" style="background:#000"></span> Add Entity</span> to drop a random entity in an open cell.</li>
+        <li><strong>Drag</strong> entities to move them (they can’t move into walls).</li>
+        <li>Use the <strong>top-right controls</strong> to Undo, Zoom, Fit, Save, Load, and Pan.</li>
+        <li>Press <span class="kbd">E</span> then click a cell to open the <strong>Cell Editor</strong> to tweak types, IDs, and Z values.</li>
+      </ol>
+      <div class="callout small">Tip: The grid shows <strong>battleship-style labels</strong> — columns A… and rows 1… — with <strong>A1</strong> at the top-left.</div>
+    </section>
+
+    <section id="ui-overview">
+      <h2>UI Overview</h2>
+      <div class="grid">
+        <div>
+          <h3>Sidebar (left)</h3>
+          <ul class="list-compact">
+            <li><strong>Add Entity</strong>: inserts an entity of the currently selected type at a random valid cell.</li>
+            <li><strong>Select Type</strong>: choose an entity icon (heroes, enemies, class symbols).</li>
+            <li><strong>Terrain</strong>: choose <em>Wall</em>, <em>Trap</em>, <em>Hole</em>, or <em>Platform</em> and paint on the grid.</li>
+            <li><strong>Grid X/Y</strong> + <em>Resize Grid</em>: change board dimensions.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Controls (top-right)</h3>
+          <table>
+            <thead><tr><th>Button</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>⎌</td><td>Undo last change</td></tr>
+              <tr><td>+</td><td>Zoom in</td></tr>
+              <tr><td>−</td><td>Zoom out</td></tr>
+              <tr><td>=</td><td>Fit grid to screen</td></tr>
+              <tr><td>💾</td><td>Save board to a JSON file</td></tr>
+              <tr><td>📂</td><td>Load a previously saved JSON file</td></tr>
+              <tr><td>↑ ← → ↓</td><td>Pan the view</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="grid-coords">
+      <h2>Grid & Coordinates</h2>
+      <p>The board is a rectangular grid of cells sized by <code>Grid X</code> (columns) and <code>Grid Y</code> (rows). Column labels run A, B, C… and row labels run 1, 2, 3… with <strong>A1 at the top-left</strong>. When you resize or fit-to-screen, labels remain aligned with the cells.</p>
+    </section>
+
+    <section id="terrain">
+      <h2>Terrain</h2>
+      <p>Paint terrain by selecting a type in the sidebar and clicking cells.</p>
+      <table>
+        <thead><tr><th>Type</th><th>Color</th><th>Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Wall</td><td><span class="color" style="background:#808080"></span></td><td>Blocks entities from being placed or dragged into that cell.</td></tr>
+          <tr><td>Trap</td><td><span class="color" style="background:#ff0000"></span></td><td>Visual marker; behavior is up to your game rules.</td></tr>
+          <tr><td>Hole</td><td><span class="color" style="background:#0000ff"></span></td><td>Each placement <em>decreases</em> cell height <code>z</code> (e.g., −1 per hole layer by default).</td></tr>
+          <tr><td>Platform</td><td><span class="color" style="background:#00ff00"></span></td><td>Each placement <em>increases</em> cell height <code>z</code> (e.g., +1 per platform layer by default).</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Z-values are displayed as <code>z#</code> in the cell corner. You can tune how fast Z changes in the code (see <em>Customization ▸ Z increment</em> below).</p>
+    </section>
+
+    <section id="entities">
+      <h2>Entities</h2>
+      <ul>
+        <li>Select an entity icon, then click <strong>Add Entity</strong> to drop one at a random valid location (not on walls or occupied cells).</li>
+        <li><strong>Drag</strong> entities to a new cell; they cannot pass through walls.</li>
+        <li>Entities draw with their image and an optional colored outline.</li>
+      </ul>
+      <p class="small">Entity images are loaded from the <code>icons_export/</code> paths in the code; you can add or remove icons by editing that list.</p>
+    </section>
+
+    <section id="editing">
+      <h2>Cell Editor</h2>
+      <ol>
+        <li>Press <span class="kbd">E</span> to enable edit mode.</li>
+        <li>Click a cell to open the editor panel.</li>
+        <li>Adjust <strong>Entity Type</strong>, <strong>Entity ID</strong>, <strong>Terrain Type</strong>, and <strong>Terrain Z</strong>, then click <strong>Apply</strong>.</li>
+      </ol>
+      <p>Use <strong>Delete Entity</strong> or <strong>Delete Terrain</strong> to remove items from that cell.</p>
+    </section>
+
+    <section id="view">
+      <h2>Zoom, Pan & Fit</h2>
+      <ul class="list-compact">
+        <li><strong>Zoom</strong>: <em>+</em> and <em>−</em> adjust cell size.</li>
+        <li><strong>Pan</strong>: arrow buttons move the view; the board itself doesn’t change.</li>
+        <li><strong>Fit</strong>: <em>=</em> resizes cells so the board fits the available space.</li>
+      </ul>
+    </section>
+
+    <section id="save-load">
+      <h2>Save & Load</h2>
+      <ul>
+        <li><strong>Save</strong> (💾) downloads a JSON file with the entire board state (grid size, terrain, entities).</li>
+        <li><strong>Load</strong> (📂) imports a previously saved JSON to restore the board.</li>
+      </ul>
+      <div class="callout small">Tip: you can version these JSON files in source control to track map changes over time.</div>
+    </section>
+
+    <section id="undo">
+      <h2>Undo</h2>
+      <p>Use the ⎌ button to revert to the previous state. The app keeps a compact stack of recent actions.</p>
+    </section>
+
+    <section id="resize">
+      <h2>Resizing the Grid</h2>
+      <p>Change <strong>Grid X</strong> and <strong>Grid Y</strong> values in the sidebar and click <strong>Resize Grid</strong>. The view will refit to the screen automatically.</p>
+    </section>
+
+    <section id="customize">
+      <h2>Customization</h2>
+      <h3>Add/Remove Entities</h3>
+      <p>Edit the <code>iconPaths</code> array in the script to point at your image files. Keys are inferred from filenames (e.g., <code>Enemy_01.png</code> becomes <code>"01"</code>).</p>
+      <h3>Terrain Colors</h3>
+      <p>Inside <code>render()</code>, adjust the color map used for terrain fill, e.g.:
+      <code>{ wall:'#808080', trap:'#ff0000', hole:'#0000ff', platform:'#00ff00' }</code>.</p>
+      <h3>Coordinates & Labels</h3>
+      <p>Labels (A…/1…) render around the grid; tweak spacing via <code>labelMargin</code> in the code if you want larger text.</p>
+      <h3>Z increment (platforms/holes)</h3>
+      <p>In <code>handleBrush()</code> you can control how quickly Z changes. For example, to make platforms rise by 0.5 instead of 1:</p>
+      <pre><code>// inside handleBrush()
+} else if (selectedType === 'platform') {
+  const step = 0.5; // &lt;-- tune here
+  z = stack.reduce((acc, t) => acc + (t.type === 'platform' ? step : 0), 0) + step;
+}
+// for holes (negative):
+} else if (selectedType === 'hole') {
+  const step = 0.5; // &lt;-- tune here
+  z = stack.reduce((acc, t) => acc + (t.type === 'hole' ? -step : 0), 0) - step;
+}
+</code></pre>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>Troubleshooting</h2>
+      <ul>
+        <li><strong>Canvas looks blank</strong>: ensure the context is created (<code>const ctx = canvas.getContext('2d')</code>) and that <code>render()</code> runs (e.g., via <code>fitGridToScreen()</code>).</li>
+        <li><strong>Terrain not visible</strong>: verify terrain colors are valid CSS (e.g., <code>#00ff00</code>, not <code>00ff00</code>).</li>
+        <li><strong>Images not showing</strong>: check file paths in <code>iconPaths</code> and your server’s static file routes.</li>
+        <li><strong>Dragging blocked</strong>: entities cannot move into cells that contain a wall.</li>
+      </ul>
+    </section>
+
+    <section id="schema">
+      <h2>Saved File Schema (JSON)</h2>
+      <pre><code>{
+  "gridWidth": 8,
+  "gridHeight": 8,
+  "entities": [
+    { "type": "wizard", "x": 3, "y": 4, "id": 1723598765123, "outline": "#FF00AA" }
+  ],
+  "terrain": [
+    { "x": 1, "y": 2, "type": "wall", "z": 0 },
+    { "x": 4, "y": 5, "type": "platform", "z": 2 }
+  ]
+}
+</code></pre>
+      <p class="small">You can safely edit these files by hand if needed.</p>
+    </section>
+
+    <section id="shortcuts">
+      <h2>Keyboard Shortcuts</h2>
+      <ul class="list-compact">
+        <li><span class="kbd">E</span> — enable editor mode for the next click</li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>Built for fast tabletop map creation. Customize freely to match your ruleset.</p>
+    </footer>
+  </main>
+</body>
+</html>
