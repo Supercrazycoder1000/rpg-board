@@ -103,7 +103,7 @@
   </div>
   <script>
     const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    const  = canvas.getContext("2d");
     let cellSize = 64;
     let gridWidth = 8;
     let gridHeight = 8;
@@ -318,7 +318,7 @@ function render() {
   }
 
   terrain.forEach(t => {
-    ctx.fillStyle = { wall: '#808080', trap: '#ff0000', hole: '#0000ff', platform: "00ff00" }[t.type] || 'white';
+    ctx.fillStyle = { wall: '#808080', trap: '#ff0000', hole: '#0000ff', platform: "#00ff00" }[t.type] || '#ffffff';
     ctx.fillRect(t.x * cellSize, t.y * cellSize, cellSize, cellSize);
     if (typeof t.z !== "undefined") {
       ctx.fillStyle = "white";
