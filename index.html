@@ -195,6 +195,16 @@
       terrainButtons.appendChild(btn);
     });
 
+  const labelMargin = 24; // space for A/B/C and 1/2/3 labels
+
+  function columnLabel(n) { // 0 -> A, 25 -> Z, 26 -> AA ...
+    let s = "";
+    n++;
+    while (n > 0) { n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); }
+    return s;
+  }
+
+
     function addEntity(type) {
   saveState();
   const maxAttempts = 50;
@@ -317,31 +327,60 @@
 function render() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Apply panning offset
   ctx.translate(offsetX, offsetY);
 
+  // Draw headers background (optional, helps readability)
+  ctx.fillStyle = '#f7f7f7';
+  ctx.fillRect(labelMargin, 0, gridWidth * cellSize, labelMargin);              // top strip
+  ctx.fillRect(0, labelMargin, labelMargin, gridHeight * cellSize);             // left strip
+
+  // Top A/B/C... labels
+  ctx.fillStyle = '#333';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${Math.max(10, Math.floor(cellSize * 0.4))}px sans-serif`;
+  for (let x = 0; x < gridWidth; x++) {
+    const cx = labelMargin + x * cellSize + cellSize / 2;
+    ctx.fillText(columnLabel(x), cx, labelMargin / 2);
+  }
+
+  // Left 1/2/3... labels
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let y = 0; y < gridHeight; y++) {
+    const cy = labelMargin + y * cellSize + cellSize / 2;
+    ctx.fillText(String(y + 1), labelMargin / 2, cy);
+  }
+
+  // Grid lines
+  ctx.strokeStyle = '#ccc';
   for (let y = 0; y < gridHeight; y++) {
     for (let x = 0; x < gridWidth; x++) {
-      ctx.strokeStyle = '#ccc';
-      ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+      ctx.strokeRect(labelMargin + x * cellSize, labelMargin + y * cellSize, cellSize, cellSize);
     }
   }
 
+  // Terrain
   terrain.forEach(t => {
-    ctx.fillStyle = { wall: '#808080', trap: '#ff0000', hole: '#0000ff', platform: "#00ff00" }[t.type] || '#ffffff';
-    ctx.fillRect(t.x * cellSize, t.y * cellSize, cellSize, cellSize);
+    ctx.fillStyle = ({ wall:'#808080', trap:'#ff0000', hole:'#0000ff', platform:'#00ff00' }[t.type]) ?? '#ffffff';
+    ctx.fillRect(labelMargin + t.x * cellSize, labelMargin + t.y * cellSize, cellSize, cellSize);
     if (typeof t.z !== "undefined") {
       ctx.fillStyle = "white";
       ctx.font = `${Math.floor(cellSize / 3)}px sans-serif`;
-      ctx.fillText(`z${t.z}`, t.x * cellSize + 4, t.y * cellSize + cellSize - 4);
+      ctx.fillText(`z${t.z}`, labelMargin + t.x * cellSize + 4, labelMargin + t.y * cellSize + cellSize - 4);
     }
   });
 
+  // Entities
   entities.forEach(ent => {
     const img = entityImages[ent.type];
-    const px = ent.x * cellSize;
-    const py = ent.y * cellSize;
+    const px = labelMargin + ent.x * cellSize;
+    const py = labelMargin + ent.y * cellSize;
     if (img) {
       ctx.drawImage(img, px + 4, py + 4, cellSize - 8, cellSize - 8);
       if (ent.outline) {
@@ -353,9 +392,9 @@ function render() {
       ctx.fillStyle = "black";
       ctx.fillRect(px + 8, py + 8, cellSize - 16, cellSize - 16);
     }
-   
   });
 }
+
 
 // Existing code continues below...
 
