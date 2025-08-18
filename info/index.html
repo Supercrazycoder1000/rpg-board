@@ -4,12 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RPG Game Board — Info & User Guide</title>
+
+  <!-- Favicon (same as main page; adjust path if your structure differs) -->
+  <link rel="icon" type="image/png" href="../icons_export/enemy_square_icons/Enemy_01.png">
+
+  <!-- Meta (optional but nice for search) -->
+  <meta name="description" content="How to use the RPG Game Board: quick start, terrain & entities, coordinates, save/load, shortcuts, troubleshooting.">
+  <link rel="canonical" href="https://yourdomain.com/info/">
+
   <style>
     :root{
       --bg:#fff;--fg:#1a1a1a;--muted:#666;--line:#ddd;--chip:#f7f7f7;--accent:#2563eb;
+      --header-h: 90px; /* height used for anchor offset */
     }
     *{box-sizing:border-box}
+    html { scroll-behavior: smooth; }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Inter,sans-serif;margin:0;color:var(--fg);background:var(--bg);}
+
+    /* Sticky header */
     header{position:sticky;top:0;backdrop-filter:saturate(1.2) blur(6px);background:rgba(255,255,255,.85);border-bottom:1px solid var(--line);}
     .wrap{max-width:980px;margin:0 auto;padding:24px;}
     h1{font-size:28px;margin:0 0 6px}
@@ -31,6 +43,11 @@
     th,td{border:1px solid var(--line);padding:8px;text-align:left}
     .small{color:var(--muted);font-size:.92em}
     footer{margin:40px 0 10px;color:var(--muted)}
+
+    /* Anchor offset so sections aren't hidden under the sticky header */
+    section[id] { scroll-margin-top: var(--header-h); }
+    /* Fallback for older browsers */
+    :target::before { content:""; display:block; height:var(--header-h); margin-top:calc(var(--header-h) * -1); }
   </style>
 </head>
 <body>
@@ -171,7 +188,7 @@
     <section id="customize">
       <h2>Customization</h2>
       <h3>Add/Remove Entities</h3>
-      <p>Edit the <code>iconPaths</code> array in the script to point at your image files. Keys are inferred from filenames (e.g., <code>Enemy_01.png</code> becomes <code>"01"</code>).</p>
+      <p>Edit the <code>iconPaths</code> array in the script to point at your image files. Keys are inferred from filenames (e.g., <code>Enemy_01.png</code> becomes <code>\"01\"</code>).</p>
       <h3>Terrain Colors</h3>
       <p>Inside <code>render()</code>, adjust the color map used for terrain fill, e.g.:
       <code>{ wall:'#808080', trap:'#ff0000', hole:'#0000ff', platform:'#00ff00' }</code>.</p>
